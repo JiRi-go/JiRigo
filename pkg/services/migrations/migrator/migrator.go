@@ -167,6 +167,39 @@ func (m *AddIndexMigration) Name() string {
 	return m.name
 }
 
+//============= Raw SQL(FK 사용) =============
+
+// Raw SQL 실행 마이그레이션
+type RawSQLMigration struct {
+	id   string
+	name string
+	sql  string
+}
+
+// 새 SQL 실행 마이그레이션 생성
+func NewRawSQLMigration(id, sql string) *RawSQLMigration {
+	return &RawSQLMigration{
+		id:   id,
+		name: fmt.Sprintf("Execute raw SQL: %s", id),
+		sql:  sql,
+	}
+}
+
+// SQL 문 반환
+func (m *RawSQLMigration) SQL(dialect Dialect) string {
+	return m.sql
+}
+
+// 마이그레이션 ID 반환
+func (m *RawSQLMigration) ID() string {
+	return m.id
+}
+
+// 마이그레이션 이름 반환
+func (m *RawSQLMigration) Name() string {
+	return m.name
+}
+
 //============= Migrator =============
 
 // 마이그레이션 매니저
