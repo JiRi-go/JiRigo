@@ -70,6 +70,7 @@ func (m *MigrationManager) RunMigrations() error {
 
 	// 각 도메인별 마이그레이션 등록
 	mig.AddUserMigrations(mg)
+	mig.AddOauthAccountsMigrations(mg)
 	// 다른 마이그레이션 등록 가능...
 
 	// 마이그레이션 실행
