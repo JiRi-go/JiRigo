@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/jslee/JiRigo/pkg/infra/config"
@@ -10,24 +13,31 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL 드라이버 임포트 추가
 )
 
-// init 함수는 main 함수 실행 전에 자동으로 호출됨
-func init() {
-	// 여러 가능한 위치 시도
-	err1 := godotenv.Load()                              // 현재 작업 디렉토리
-	err2 := godotenv.Load("../../.env")                  // main.go 기준 상대 경로
-	err3 := godotenv.Load("/home/jslee/dev/JiRigo/.env") // 절대 경로
-
-	if err1 != nil && err2 != nil && err3 != nil {
-		log.Printf("경고: .env 파일을 찾을 수 없습니다")
+// loadEnv .env 파일을 로드하는 함수
+func loadEnv() {
+	// 여러 경로에서 .env 파일 로드 시도
+	envFiles := []string{
+		".env",
+		"../../.env",
+		"../../../.env",
 	}
+
+	for _, file := range envFiles {
+		if err := godotenv.Load(file); err == nil {
+			log.Printf("환경 변수 파일 로드됨: %s", file)
+			return
+		}
+	}
+
+	log.Println("경고: .env 파일을 찾을 수 없습니다. 환경 변수를 시스템 환경에서 읽습니다.")
 }
 
-func main() {
-	// 설정 로드
-	dbConfig := config.NewDatabaseConfig()
+// initDatabase 데이터베이스 초기화 및 마이그레이션 수행
+func initDatabase(dbConfig *config.DatabaseConfig) error {
+	// 임시 클라이언트로 데이터베이스 존재 여부 확인
+	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// 데이터베이스 존재 여부 확인 및 생성 (임시 클라이언트 사용)
-	log.Println("데이터베이스 확인 중...")
 	tempClient, err := postgres.NewClient(&config.DatabaseConfig{
 		Host:     dbConfig.Host,
 		Port:     dbConfig.Port,
@@ -37,39 +47,51 @@ func main() {
 		SSLMode:  dbConfig.SSLMode,
 	})
 	if err != nil {
-		log.Fatalf("임시 PostgreSQL 클라이언트 생성 실패: %v", err)
+		return fmt.Errorf("임시 PostgreSQL 클라이언트 생성 실패: %w", err)
 	}
+	defer tempClient.Close()
 
 	// 마이그레이션 관리자 생성
-	migrationManager := migrations.NewMigrationManager(tempClient, dbConfig)
+	migrationManager := migrations.NewMigrationManager(tempClient.DB(), dbConfig)
 
 	// 데이터베이스 존재 확인 및 생성
 	if err := migrationManager.EnsureDatabaseExists(); err != nil {
-		log.Fatalf("데이터베이스 확인/생성 실패: %v", err)
+		return fmt.Errorf("데이터베이스 확인/생성 실패: %w", err)
 	}
-
-	// 임시 클라이언트 닫기
-	tempClient.Close()
 
 	// 실제 애플리케이션 데이터베이스로 연결하는 클라이언트 생성
 	pgClient, err := postgres.NewClient(dbConfig)
 	if err != nil {
-		log.Fatalf("PostgreSQL 클라이언트 생성 실패: %v", err)
+		return fmt.Errorf("PostgreSQL 클라이언트 생성 실패: %w", err)
 	}
 	defer pgClient.Close()
 
 	// 마이그레이션 실행
-	migrationManager = migrations.NewMigrationManager(pgClient, dbConfig)
+	migrationManager = migrations.NewMigrationManager(pgClient.DB(), dbConfig)
 	if err := migrationManager.RunMigrations(); err != nil {
-		log.Fatalf("마이그레이션 실행 실패: %v", err)
+		return fmt.Errorf("마이그레이션 실행 실패: %w", err)
 	}
 
-	// 저장소 및 서비스 초기화
-	// userRepo := users.NewPostgresRepository(pgClient)
-	// userService := users.NewService(userRepo)
+	return nil
+}
+
+func main() {
+	// 환경 변수 로드
+	loadEnv()
+
+	// 설정 로드
+	dbConfig := config.NewDatabaseConfig()
+
+	// 데이터베이스 초기화
+	if err := initDatabase(dbConfig); err != nil {
+		log.Fatalf("데이터베이스 초기화 실패: %v", err)
+	}
+
+	// 서비스 초기화
+	// signinService := signin.NewService(pgClient)
 
 	// API 서버 초기화 및 실행
-	// ...
+	// TODO: 서버 시작 로직 추가
 
 	log.Println("서버 시작됨")
 }
