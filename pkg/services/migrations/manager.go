@@ -72,6 +72,7 @@ func (m *MigrationManager) RunMigrations() error {
 	mig.AddUserMigrations(mg)
 	mig.AddOauthAccountsMigrations(mg)
 	mig.AddDiariesMigrations(mg)
+	mig.AddDiaryImagesMigrations(mg)
 	// 다른 마이그레이션 등록 가능...
 
 	// 마이그레이션 실행
