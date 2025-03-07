@@ -15,13 +15,13 @@ func AddOauthAccountsMigrations(mg *migrator.Migrator) {
 			{Name: "provider", Type: schema.DB_NVarchar, Length: 255, Nullable: false},
 			{Name: "provider_id", Type: schema.DB_NVarchar, Length: 255, Nullable: false},
 			{Name: "provider_email", Type: schema.DB_NVarchar, Length: 255, Nullable: false},
-			{Name: "access_token", Type: schema.DB_Text, Nullable: false},
-			{Name: "refresh_token", Type: schema.DB_Text, Nullable: false},
+			{Name: "access_token", Type: schema.DB_Text, Nullable: true},
+			{Name: "refresh_token", Type: schema.DB_Text, Nullable: true},
 			{Name: "created_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
 			{Name: "updated_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
 		},
 		Indices: []*schema.Index{
-			{Cols: []string{"provider_id"}, Type: schema.UniqueIndex},
+			{Cols: []string{"provider", "provider_id"}, Type: schema.UniqueIndex},
 		},
 	}
 
