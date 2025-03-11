@@ -77,6 +77,7 @@ func (m *MigrationManager) RunMigrations() error {
 	mig.AddDiaryLikesMigrations(mg)
 	mig.AddAnonymousPostsMigrations(mg)
 	mig.AddAnonymousViewsMigrations(mg)
+	mig.AddAnonymousImagesMigrations(mg)
 
 	// 마이그레이션 실행
 	return mg.RunMigrations()
