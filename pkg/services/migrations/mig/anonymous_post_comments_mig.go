@@ -5,14 +5,14 @@ import (
 	"github.com/jslee/JiRigo/pkg/services/migrations/schema"
 )
 
-// AddAnonymousPostCommentsMigrations 인증 관련 마이그레이션 추가
+// AddAnonymousPostCommentsMigrations 익명 게시판 관련 마이그레이션 추가
 func AddAnonymousPostCommentsMigrations(mg *migrator.Migrator) {
 	anonymousPostCommentsTable := schema.Table{
 		Name: "anonymous_post_comments",
 		Columns: []*schema.Column{
 			{Name: "uid", Type: schema.DB_NVarchar, Length: 50, Nullable: false, IsPrimaryKey: true},
 			{Name: "post_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
-			{Name: "user_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
+			{Name: "user_id", Type: schema.DB_NVarchar, Length: 50, Nullable: true},
 			{Name: "parent_id", Type: schema.DB_NVarchar, Length: 50, Nullable: true},
 			{Name: "content", Type: schema.DB_Text, Nullable: false},
 			{Name: "created_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
@@ -39,7 +39,7 @@ func AddAnonymousPostCommentsMigrations(mg *migrator.Migrator) {
 
 	mg.AddMigration(migrator.NewRawSQLMigration(
 		"add_foreign_key_anonymous_post_comments_user_id",
-		"ALTER TABLE anonymous_post_comments ADD CONSTRAINT fk_anonymous_post_comments_user_id FOREIGN KEY (user_id) REFERENCES users(uid) ON DELETE CASCADE;",
+		"ALTER TABLE anonymous_post_comments ADD CONSTRAINT fk_anonymous_post_comments_user_id FOREIGN KEY (user_id) REFERENCES users(uid) ON DELETE SET NULL;",
 	))
 
 	mg.AddMigration(migrator.NewRawSQLMigration(

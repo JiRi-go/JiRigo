@@ -5,14 +5,14 @@ import (
 	"github.com/jslee/JiRigo/pkg/services/migrations/schema"
 )
 
-// AddAnonymousPostLikesMigrations 인증 관련 마이그레이션 추가
+// AddAnonymousPostLikesMigrations 익명 게시판 좋아요수 관련 마이그레이션 추가
 func AddAnonymousPostLikesMigrations(mg *migrator.Migrator) {
 	anonymousPostLikesTable := schema.Table{
 		Name: "anonymous_post_likes",
 		Columns: []*schema.Column{
 			{Name: "uid", Type: schema.DB_NVarchar, Length: 50, Nullable: false, IsPrimaryKey: true},
 			{Name: "post_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
-			{Name: "user_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
+			{Name: "user_id", Type: schema.DB_NVarchar, Length: 50, Nullable: true},
 			{Name: "created_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
 		},
 		Indices: []*schema.Index{
