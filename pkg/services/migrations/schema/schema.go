@@ -29,7 +29,7 @@ type Column struct {
 	Nullable        bool
 	IsPrimaryKey    bool
 	IsAutoIncrement bool
-	Default         string
+	Default         interface{}
 }
 
 // 인덱스 정의

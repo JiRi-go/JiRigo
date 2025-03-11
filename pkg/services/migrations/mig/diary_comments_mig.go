@@ -46,6 +46,6 @@ func AddDiaryCommentsMigrations(mg *migrator.Migrator) {
 
 	mg.AddMigration(migrator.NewRawSQLMigration(
 		"add_foreign_key_diary_comments_parent_id",
-		"ALTER TABLE diary_comments ADD CONSTRAINT fk_diary_comments_parent_id FOREIGN KEY (parent_id) REFERENCES diary_comments(uid) ON DELETE SET NULL;",
+		"ALTER TABLE diary_comments ADD CONSTRAINT fk_diary_comments_parent_id FOREIGN KEY (parent_id) REFERENCES diary_comments(uid) ON DELETE CASCADE;",
 	))
 }

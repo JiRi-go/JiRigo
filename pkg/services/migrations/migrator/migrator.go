@@ -65,9 +65,14 @@ func (d *PostgresDialect) ColumnDefinition(col *schema.Column) string {
 		sql += " NOT NULL"
 	}
 
-	if col.Default != "" {
-		sql += " DEFAULT " + col.Default
+	if col.Default != nil {
+		defaultValue := fmt.Sprintf("%v", col.Default) // interface{} → string 변환
+		sql += " DEFAULT " + defaultValue
 	}
+
+	// if col.Default != "" {
+	// 	sql += " DEFAULT " + col.Default
+	// }
 
 	return sql
 }

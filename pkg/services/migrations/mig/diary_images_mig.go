@@ -15,8 +15,9 @@ func AddDiaryImagesMigrations(mg *migrator.Migrator) {
 			{Name: "image_url", Type: schema.DB_NVarchar, Length: 255, Nullable: false},
 			{Name: "image_type", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
 			{Name: "original_filename", Type: schema.DB_Text, Nullable: false},
-			{Name: "file_size", Type: schema.DB_Bool, Nullable: false}, // boolean???
+			{Name: "file_size", Type: schema.DB_BigInt, Nullable: false},
 			{Name: "created_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
+			{Name: "updated_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
 		},
 		Indices: []*schema.Index{
 			{Cols: []string{"diary_id"}, Type: schema.IndexNormal},

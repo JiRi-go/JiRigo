@@ -14,7 +14,6 @@ func AddDiaryLikesMigrations(mg *migrator.Migrator) {
 			{Name: "diary_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
 			{Name: "user_id", Type: schema.DB_NVarchar, Length: 50, Nullable: false},
 			{Name: "created_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
-			{Name: "updated_at", Type: schema.DB_DateTime, Nullable: false, Default: "NOW()"},
 		},
 		Indices: []*schema.Index{
 			{Cols: []string{"diary_id"}, Type: schema.IndexNormal}, 
