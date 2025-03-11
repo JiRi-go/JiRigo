@@ -6,11 +6,15 @@ import (
 	"log"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/jslee/JiRigo/pkg/infra/config"
 	"github.com/jslee/JiRigo/pkg/infra/db"
 	"github.com/jslee/JiRigo/pkg/infra/postgres"
+	"github.com/jslee/JiRigo/pkg/infra/routing"
 	"github.com/jslee/JiRigo/pkg/services/migrations"
+	"github.com/jslee/JiRigo/pkg/services/signin/signinapi"
+	"github.com/jslee/JiRigo/pkg/services/signin/signinimpl"
 	_ "github.com/lib/pq" // PostgreSQL 드라이버 임포트 추가
 )
 
@@ -88,6 +92,21 @@ func initDatabase(dbConfig *config.DatabaseConfig) (db.DB, error) {
 	return gormDB, nil
 }
 
+func setupServer(db db.DB) *gin.Engine {
+	engine := gin.Default()
+
+	// 라우터 등록기 생성
+	routeRegister := routing.NewGinRouteRegister(engine)
+
+	// 서비스 제공
+	signinService, _ := signinimpl.ProvideService(db)
+
+	// API 컨트롤러 초기화
+	signinapi.ProvideSigninAPI(routeRegister, signinService)
+
+	return engine
+}
+
 func main() {
 	// 환경 변수 로드
 	loadEnv()
@@ -107,6 +126,15 @@ func main() {
 
 	// API 서버 초기화 및 실행
 	// TODO: 서버 시작 로직 추가
+
+	// 서버 설정 (setupServer 함수 호출 및 서버 실행)
+	engine := setupServer(gormDB)
+
+	// TODO_JS : 포트 넘버 env 파일에 정의 후 불러와서 서버 실행하도록 수정 필요 (25-03-11)
+	// 서버 실행 (포트 8080으로 설정)
+	if err := engine.Run(":8080"); err != nil {
+		log.Fatalf("서버 실행 실패: %v", err)
+	}
 
 	log.Println("서버 시작됨")
 }
