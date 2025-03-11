@@ -72,6 +72,8 @@ func initDatabase(dbConfig *config.DatabaseConfig) error {
 		return fmt.Errorf("마이그레이션 실행 실패: %w", err)
 	}
 
+	log.Println("모든 마이그레이션이 성공적으로 실행되었습니다.")
+
 	return nil
 }
 

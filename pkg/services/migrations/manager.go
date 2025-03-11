@@ -70,7 +70,16 @@ func (m *MigrationManager) RunMigrations() error {
 
 	// 각 도메인별 마이그레이션 등록
 	mig.AddUserMigrations(mg)
-	// 다른 마이그레이션 등록 가능...
+	mig.AddOauthAccountsMigrations(mg)
+	mig.AddDiariesMigrations(mg)
+	mig.AddDiaryImagesMigrations(mg)
+	mig.AddDiaryCommentsMigrations(mg)
+	mig.AddDiaryLikesMigrations(mg)
+	mig.AddAnonymousPostsMigrations(mg)
+	mig.AddAnonymousPostViewsMigrations(mg)
+	mig.AddAnonymousPostImagesMigrations(mg)
+	mig.AddAnonymousPostLikesMigrations(mg)
+	mig.AddAnonymousPostCommentsMigrations(mg)
 
 	// 마이그레이션 실행
 	return mg.RunMigrations()
