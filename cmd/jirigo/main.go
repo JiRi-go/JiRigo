@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/jslee/JiRigo/pkg/infra/config"
+	"github.com/jslee/JiRigo/pkg/infra/db"
 	"github.com/jslee/JiRigo/pkg/infra/postgres"
 	"github.com/jslee/JiRigo/pkg/services/migrations"
 	_ "github.com/lib/pq" // PostgreSQL 드라이버 임포트 추가
@@ -32,8 +33,8 @@ func loadEnv() {
 	log.Println("경고: .env 파일을 찾을 수 없습니다. 환경 변수를 시스템 환경에서 읽습니다.")
 }
 
-// initDatabase 데이터베이스 초기화 및 마이그레이션 수행
-func initDatabase(dbConfig *config.DatabaseConfig) error {
+// 데이터베이스 초기화 및 마이그레이션 수행 후 DB 인터페이스 반환
+func initDatabase(dbConfig *config.DatabaseConfig) (db.DB, error) {
 	// 임시 클라이언트로 데이터베이스 존재 여부 확인
 	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -47,7 +48,7 @@ func initDatabase(dbConfig *config.DatabaseConfig) error {
 		SSLMode:  dbConfig.SSLMode,
 	})
 	if err != nil {
-		return fmt.Errorf("임시 PostgreSQL 클라이언트 생성 실패: %w", err)
+		return nil, fmt.Errorf("임시 PostgreSQL 클라이언트 생성 실패: %w", err)
 	}
 	defer tempClient.Close()
 
@@ -56,25 +57,35 @@ func initDatabase(dbConfig *config.DatabaseConfig) error {
 
 	// 데이터베이스 존재 확인 및 생성
 	if err := migrationManager.EnsureDatabaseExists(); err != nil {
-		return fmt.Errorf("데이터베이스 확인/생성 실패: %w", err)
+		return nil, fmt.Errorf("데이터베이스 확인/생성 실패: %w", err)
 	}
 
-	// 실제 애플리케이션 데이터베이스로 연결하는 클라이언트 생성
-	pgClient, err := postgres.NewClient(dbConfig)
+	// 실제 애플리케이션 데이터베이스로 연결하는 GORM DB 생성
+	gormDB, err := db.NewPostgresDB(dbConfig)
 	if err != nil {
-		return fmt.Errorf("PostgreSQL 클라이언트 생성 실패: %w", err)
+		return nil, fmt.Errorf("GORM DB 생성 실패: %w", err)
 	}
-	defer pgClient.Close()
 
 	// 마이그레이션 실행
+	// 기존 마이그레이션 시스템을 계속 사용하려면:
+	pgClient, err := postgres.NewClient(dbConfig)
+	if err != nil {
+		gormDB.Close() // GORM DB 연결 닫기
+		return nil, fmt.Errorf("PostgreSQL 클라이언트 생성 실패: %w", err)
+	}
+
 	migrationManager = migrations.NewMigrationManager(pgClient.DB(), dbConfig)
 	if err := migrationManager.RunMigrations(); err != nil {
-		return fmt.Errorf("마이그레이션 실행 실패: %w", err)
+		pgClient.Close() // PostgreSQL 클라이언트 연결 닫기
+		gormDB.Close()   // GORM DB 연결 닫기
+		return nil, fmt.Errorf("마이그레이션 실행 실패: %w", err)
 	}
+
+	pgClient.Close() // 마이그레이션에만 사용한 클라이언트 연결 닫기
 
 	log.Println("모든 마이그레이션이 성공적으로 실행되었습니다.")
 
-	return nil
+	return gormDB, nil
 }
 
 func main() {
@@ -84,13 +95,15 @@ func main() {
 	// 설정 로드
 	dbConfig := config.NewDatabaseConfig()
 
-	// 데이터베이스 초기화
-	if err := initDatabase(dbConfig); err != nil {
+	// 데이터베이스 초기화 및 DB 인터페이스 획득
+	gormDB, err := initDatabase(dbConfig)
+	if err != nil {
 		log.Fatalf("데이터베이스 초기화 실패: %v", err)
 	}
+	defer gormDB.Close()
 
 	// 서비스 초기화
-	// signinService := signin.NewService(pgClient)
+	// signinService := signin.NewService(gormDB)
 
 	// API 서버 초기화 및 실행
 	// TODO: 서버 시작 로직 추가
